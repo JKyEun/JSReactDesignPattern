@@ -1,3 +1,6 @@
+### 책 예제 깃허브
+https://github.com/addyosmani/learning-jsdp
+
 ### 발표 순서
 
 - 1주차: 강민
