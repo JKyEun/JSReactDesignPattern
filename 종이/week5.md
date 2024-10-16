@@ -1,8 +1,6 @@
 #### Promise.all
 
-> - 프로미스 병렬 처리 패턴
-
-- react query에서 Promise.all 쓰는 사례가 궁금해져서 확인해 봤습니다.
+> react query에서 프로미스 병렬 처리 패턴인 Promise.all 쓰는 사례가 궁금해져서 확인해 봤습니다.
 
 1. 쿼리 무효화
 
