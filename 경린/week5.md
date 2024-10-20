@@ -149,3 +149,6 @@ function makeRequestWithRetry(url) {
   return makeRequest().catch(retry);
 }
 ```
+-> 웹소켓 실시간 통신의 경우 
+-> 여러 번 api 요청을 보냈을 때 성공하는 사례도 있음
+-> 와이파이 통신의 경우 (딜레이 60s)
