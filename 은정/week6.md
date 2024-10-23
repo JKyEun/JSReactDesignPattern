@@ -133,3 +133,241 @@ console.log(myApp);
 - 즉시 실행 함수 표현식 패턴과 단일 전역 변수 패턴은 중소 규모의 애플리케이션에서는 잘 작동할 수 있다
 - 하지만 네임스페이스의 심층 하위 네임스페이스가 모두 필요한 대규모 코드베이스의 경우에는 가독성과 확장성을 높여주는 보다 간결한 해결책이 필요하다
 - 객체 리터럴을 사용한 중첩 네임스페이스 패턴을 사용한다면 모두 해결할 수 있는 문제이다
+
+# 12강. 리액트 디자인 패턴
+## 정리
+#### 리액트의 기본 개념
+- 컴포넌트
+  - 어떠한 입력값(Props)를 받아서 화면에 표시할 내용을 나타내는 리액트의 요소를 반환하는 함수
+  - UI를 독립적이고 재사용 가능한 조각으로 나눌 수 있게 해준다
+- Props
+  - 리액트 컴포넌트의 내부 데이터
+  - 상위 컴포넌트 내부에서 하위 컴포넌트로 전달할 때 사용되며 HTML 속성과 같은 문법을 사용한다
+  - props 값은 컴포넌트가 만들어지기 전에 미리 결정되고 컴포넌트 설계의 일부로 사용된다
+  - props 값은 바꿀 수 없다 => 컴포넌트로 전달되고 나면 읽기 전용이 된다
+- 상태
+  - 컴포넌트의 라이프사이클 동안 값이 변할 수도 있는 정보를 담고 있는 객체
+  - 컴포넌트가 받아온 props의 현재 상태를 나타내기도 한다
+- 클라이언트 사이드 렌더링(CSR)
+  - 서버가 페이지의 기본 HTML 컨테이너만을 렌더링한다
+  - 페이지에 내용을 표시하기 위해 필요한 로직, 데이터 가져오기, 템플릿, 라우팅은 클라이언트에서 실행되는 자바스크립트 코드가 처리한다
+  - CSR은 SPA를 구축하는 방법으로 인기를 얻었다
+  - 고도의 상호작용이 필요한 애플리케이션에 적합하다
+- 서버 사이드 렌더링(SSR)
+  - 사용자 요청에 응답하여 페이지 콘텐츠를 데이터 저장소나 외부 API의 데이터가 포함된 완전한 HTML 파일로 생성한다
+  - 리액트는 동형 렌더링(isomorphic)이 가능해 브라우저뿐만 아니라 서버 같은 다른 플랫폼에서도 작동할 수 있음을 의미한다
+- 하이드레이션(Hydration)
+  - 서버에서 렌더링된 애플리케이션에서는 현재 페이지의 HTML이 서버에서 생성되어 클라이언트로 전송된다
+  - 서버에서 이미 마크업을 생성했기 때문에 클라이언트는 이를 빠르게 파싱하여 화면에 나타낼 수 있다
+  - 버튼과 같은 UI 요소를 상호작용할 수 있게 하는 이벤트 핸들러는 자바스크립트 번들이 로드되고 처리된 후에야 비로소 연결된다
+  - 이러한 일련의 과정을 하이드레이션이라고 한다
+  - 리액트는 현재의 DOM 노드를 검사하고, 해당 자바스크립트와 연결하여 활성화, 즉 하이드레이트한다
+
+#### 리액트에서 널리 사용되는 디자인 패턴
+- 고차 컴포넌트 패턴
+- 렌더링 Props 패턴
+- Hooks 패턴
+- 정적 가져오기
+- 동적 가져오기
+- 코드 스플리팅
+- PRPL 패턴
+- 로딩 우선순위
+
+### 고차 컴포넌트(Higher-Order Component, HOC)
+- 여러 컴포넌트에서 동일한 로직을 재사용하는 방법 중 하나로, 애플리케이션 전체에서 컴포넌트 로직을 재사용할 수 있다
+- 고차 컴포넌트는 다른 컴포넌트를 인자로 받아 추가 기능을 적용한 새로운 컴포넌트를 반환하는 컴포넌트이다
+- 매번 스타일 객체를 일일이 생성하는 대신, 매개변수로 전달받은 컴포넌트에 스타일 객체를 추가하는 고차 컴포넌트를 만들 수도 있다
+- 고차 컴포넌트 패턴을 사용하면 필요한 로직을 한 곳에 유지하면서 동시에 여러 컴포넌트에 동일한 로직을 제공할 수 있다
+- ex: 데이터를 가져오는 동안 사용자에게 로딩 화면을 보여주고 싶다면 이 기능을 DogImages 컴포넌트에 직접 추가하는 대신에 로딩 화면을 추가하는 고차 컴포넌트를 활용할 수 있다. 
+  - useEffect 내에서 withLoader는 url 값으로 전달받은 API 엔드포인트에서 데이터를 가져온다. 데이터를 가져오는 동안에는 로딩 중 텍스트 요소를 반환한다
+  - 데이터 가져오기가 완료되면, data 상태에서 가져온 데이터를 할당한다. 그럼 data는 더 이상 null이 아니므로, 비로소 prop으로 받아온 컴포넌트를 표시할 수 있다
+
+```js copy
+function withLoader(Element, url) {
+  return function WithLoader(props) {
+    const [data, setData] = React.useState(null);
+
+    React.useEffect(() => {
+      async function fetchData() {
+        const response = await fetch(url);
+        const data = await response.json();
+        setData(data);
+      }
+
+      fetchData();
+    }, []);
+
+    if (!data) {
+      return <div>Loading...</div>;
+    }
+
+    return <Element {...props} data={data} />;
+  };
+}
+
+function DogImages(props) {
+  return props.data.message.map((dog, index) => (
+    <img src={dog} alt="Dog" key={index} />
+  ));
+}
+
+// Wrap DogImages with withLoader HOC
+const WrappedDogImages = withLoader(
+  DogImages,
+  "https://dog.ceo/api/breed/labrador/images/random/6"
+);
+
+export default WrappedDogImages;
+```
+
+#### 고차 컴포넌트 조합하기
+- Hooks 패턴을 사용하여 비슷한 결과를 얻는 것도 가능하다
+- Hooks를 사용하면 컴포넌트 트리가 단순해지고, 고차 컴포넌트 패턴을 사용하면 깊게 중첩된 컴포넌트 트리가 만들어지기 쉽다
+
+#### 고차 컴포넌트 패턴이 효과적인 경우
+- 애플리케이션 전체에 걸쳐 여러 컴포넌트에 동일한 동작을 적용해야 할 때
+- 추가된 커스텀 로직 없이도 컴포넌트가 독립적으로 작동할 수 있을 때
+
+#### 고차 컴포넌트의 장점
+- 재사용하고자 하는 로직을 한 곳에 모아 관리할 수 있다
+- 코드를 여기저기 복사하면서 실수로 버그를 퍼뜨릴 위험을 줄일 수 있다
+- 로직을 한 곳에 집중시킴으로써 코드를 DRY하게 유지하고, 효과적으로 관심사를 분리할 수 있다
+
+#### 고차 컴포넌트의 단점
+- 고차 컴포넌트가 대상 컴포넌트에 전달하는 prop의 이름은 충돌을 일으킬 수 있다
+- 여러 고차 컴포넌트를 조합하여 사용하게 된다면 어떤 고차 컴포넌트가 어떤 prop을 제공하는지 파악하기 어려울 수 있다
+- 이렇게 되면 디버깅과 애플리케이션 확장에 어려움이 생길 수 있다
+
+### 렌더링 Props 패턴
+- 여러 컴포넌트가 동일한 데이터에 접근하거나 동일한 로직을 포함해야 할 때 컴포넌트 로직을 재사용하면 개발이 편리해진다
+- 렌더링 Props 패턴은 컴포넌트를 재사용하는 또 다른 방법이다
+- 렌더링 prop은 JSX 요소를 반환하는 함수 값을 가지는 컴포넌트의 prop이다
+- 컴포넌트 자체는 렌더링 prop 외에는 아무것도 렌더링하지 않는다
+- 렌더링 props의 장점은 prop을 받는 컴포넌트를 재사용할 수 있다는 것이다. 
+- 한 컴포넌트를 여러 번 사용하면서 매번 다른 값을 렌더링 prop에 전달할 수 있다
+- JSX를 렌더링하는 모든 prop은 렌더링 prop으로 간주된다
+- 렌더링 prop을 받는 컴포넌트는 보통 렌더링 prop을 호출하는 것 이상의 역할을 한다. 
+- 일반적으로 렌더링 prop을 받는 컴포넌트에서 가져온 데이터를, 렌더링 prop으로 전달된 요소에 전달하곤 한다. 이제 렌더링 prop은 인자로 값을 받아올 수 있다
+```js copy
+function Component(props) {
+  const data = { ... };
+
+  return props.render(data);
+}
+
+// 렌더링 prop은 인자로 값을 받아올 수 있다
+<Component render={data => <ChildComponent data={data} />} />
+```
+
+#### 상태 끌어올리기
+- 입력 컴포넌트가 자신의 상태를 다른 컴포넌트와 공유하려면, 상태를 필요로 하는 컴포넌트와 가장 가까운 조상 컴포넌트로 끌어올려야 한다. 이것이 바로 **상태 끌어올리기**이다
+- 상태 끌어올리기는 리액트에서 유용한 상태 관리 패턴이다. 때로는 형제 컴포넌트 간에 상태를 공유해야 하는 경우가 있는데, 작은 규모의 애플리케이션에서는 리덕스나 Context API와 같은 전역 상태 관리 라이브러리 대신 이 패턴을 사용하여 상태를 가장 가까운 공통 조상 컴포넌트로 끌어올리는 것만으로도 충분하다
+- 하지만 많은 자식 컴포넌트를 처리하는 큰 규모의 애플리케이션에서는 상태 끌어올리기가 복잡해질 수 있다
+- 각 상태 변경 시 데이터를 사용하지 않는 자식 컴포넌트까지 모두 리렌더링될 수 있어, 성능에 악영항을 줄 수 있다
+- 그러나 렌더링 Props 패턴을 사용하면 이러한 문제를 해결할 수 있다
+```js copy {13}
+// Input component using render prop
+function Input(props) {
+  const [value, setValue] = React.useState("");
+
+  return (
+    <div>
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        placeholder="Temp in °C"
+      />
+      {props.render(value)}
+    </div>
+  );
+}
+
+// Kelvin component
+function Kelvin({ value = 0 }) {
+  return <div className="temp">{Number(value) + 273.15}K</div>;
+}
+
+// Fahrenheit component
+function Fahrenheit({ value = 0 }) {
+  return <div className="temp">{(Number(value) * 9) / 5 + 32}°F</div>;
+}
+
+// App component
+function App() {
+  return (
+    <div className="App">
+      <h1>Temperature Converter</h1>
+      <Input
+        render={(value) => (
+          <>
+            <Kelvin value={value} />
+            <Fahrenheit value={value} />
+          </>
+        )}
+      />
+    </div>
+  );
+}
+```
+
+#### 컴포넌트의 자식으로 함수 전달하기
+- 컴포넌트의 자식으로 함수를 전달할 수 있다
+- 이 함수는 children prop을 통해 접근할 수 있으며, 엄밀히 말하면 렌더링 Props 패턴이기도 하다
+- 렌더링 prop을 명시적으로 전달하는 대신, Input 컴포넌트의 자식으로 함수를 전달한다
+```js copy
+// App component
+function App() {
+  return (
+    <div className="App">
+      <h1>Temperature Converter</h1>
+      <Input>
+        {(value) => (
+          <>
+            <Kelvin value={value} />
+            <Fahrenheit value={value} />
+          </>
+        )}
+      </Input>
+    </div>
+  );
+}
+```
+- Input 컴포넌트의 props.children을 통해 자식으로 전달된 함수에 접근할 수 있다
+- props.render에 사용자 입력 값을 전달하는 대신, props.children에 사용자 입력 값을 전달한다
+```js copy {12}
+function Input(props) {
+  const [value, setValue] = React.useState("");
+
+  return (
+    <div>
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        placeholder="Temp in °C"
+      />
+      {props.children(value)}
+    </div>
+  );
+}
+```
+- 이렇게 하면 Kelvin과 Fahrenheit 컴포넌트는 렌더링 prop의 이름에 구애받지 않고도 값에 접근할 수 있다
+
+#### 렌더링 Props 패턴의 장점
+- 여러 콤퍼넌트 사이에서 로직과 데이터를 쉽게 공유할 수 있다
+- render 또는 children prop을 활용하여 컴포넌트의 재사용성을 높일 수 있다
+- 고차 컴포넌트 패턴 또한 재사용성과 데이터 공유 문제를 해결하는 데 주로 사용되지만, 렌더링 props 패턴은 고차 컴포넌트 패턴 사용 시 발생할 수 있는 몇 가지 문제를 해결할 수 있다
+
+#### 렌더링 Props 패턴이 **해결할 수 있는** 고차 컴포넌트 패턴의 문제
+1. 렌더링 Props 패턴은 고차 컴포넌트 패턴에서 발생할 수 있는 이름 충돌 문제를 해결한다
+    - props를 자동으로 병합하지 않고, 부모 컴포넌트에서 제공하는 값을 그대로 자식 컴포넌트로 전달하기 때문이다
+2. props를 명시적으로 전달함으로써, 고차 컴포넌트의 암시적인 props 문제를 해결한다
+    - 요소에 전달해야 할 props는 모두 렌더링 prop의 인자 목록에 명확하게 나타나므로, 어떤 props가 어디에서 오는지 정확하게 파악할 수 있다
+3. 렌더링 prop을 통해 애플리케이션 로직과 렌더링 컴포넌트를 분리할 수 있다
+    - 렌더링 prop을 통해 상태를 가진 컴포넌트는 데이터를 상태를 가지지 않은 컴포넌트로 전달하고, 이 컴포넌트는 그저 데이터를 렌더링하는 역할을 하게 된다
+
+#### 렌더링 Props 패턴의 단점
+- 리액트 Hooks는 렌더링 Props 패턴으로 해결할 수 있는 문제 대부분을 이미 해결했다
+- Hooks는 컴포넌트에 재사용성과 데이터 공유 기능을 추가하는 방식을 변화시켰기 때문에, 대부분의 경우 렌더링 Props 패턴을 대체해 사용할 수 있다
+- 렌더링 prop에는 라이프사이클 관련 메서드를 추가할 수 없으므로, **받은 데이터를 변경할 필요가 없는 렌더링에 치중한 컴포넌트에만 사용**할 수 있다
