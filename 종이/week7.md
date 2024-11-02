@@ -1,7 +1,6 @@
 #### react hook으로는 구현할 수 없는 error boundary
 
-- react hook
-- 클래스 컴포넌트로 직접 구현하시는지 라이브러리를 이용하는지.. 다른분들은 error boundary 어떤 방식으로 사용하고 있는지 궁금하네요 🤔
+- error boundary를 클래스 컴포넌트로 직접 구현하시는지 라이브러리를 이용하는지.. 다른분들은 어떤 방식으로 사용하고 있는지 궁금하네요 🤔
 
 > 생명주기 메서드인 static getDerivedStateFromError() 와 componentDidCatch() 중 하나 (혹은 둘 다)를 정의하면 클래스 컴포넌트 자체가 에러 경계가 됩니다. 에러가 발생한 뒤에 폴백 UI를 렌더링하려면 static getDerivedStateFromError()를 사용하세요. 에러 정보를 기록하려면 componentDidCatch()를 사용하세요.
 
